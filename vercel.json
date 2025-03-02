@@ -1,0 +1,13 @@
+{
+    "functions": {
+      "api/check_authenticity.py": {
+        "runtime": "python3.10"
+      }
+    },
+    "builds": [
+      {
+        "src": "api/check_authenticity.py",
+        "use": "@vercel/python"
+      }
+    ]
+  }
