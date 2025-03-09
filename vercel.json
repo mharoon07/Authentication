@@ -1,12 +1,12 @@
 {
     "functions": {
-      "api/check_authenticity.py": {
+      "api/index.py": {
         "runtime": "python3.10"
       }
     },
     "builds": [
       {
-        "src": "api/check_authenticity.py",
+        "src": "api/index.py",
         "use": "@vercel/python"
       }
     ]

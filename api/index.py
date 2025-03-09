@@ -4,7 +4,15 @@ import cv2
 import numpy as np
 from PIL import Image
 import os
-from flask import jsonify
+from flask import Flask, request, jsonify, send_from_directory
+from flask_cors import CORS
+
+
+app = Flask(__name__)
+CORS(app, resources={r"/*": {"origins": "*"}}) 
+@app.route('/')
+def serve_frontend():
+    return send_from_directory(directory=".", path="index.html")
 
 # Load MobileNetV2 from TensorFlow Hub
 model_url = "https://tfhub.dev/google/imagenet/mobilenet_v2_100_224/feature_vector/5"
@@ -62,12 +70,9 @@ def calculate_sharpness(image_path):
     print(f"Image sharpness (Laplacian variance): {sharpness}")
     return sharpness
 
-# Save result to a text file (for Vercel, use /tmp for temporary files)
+# Save result to a text file
 def save_result_to_file(image_path, result, file_path):
-    temp_dir = "/tmp"
-    os.makedirs(temp_dir, exist_ok=True)
-    full_file_path = os.path.join(temp_dir, file_path)
-    with open(full_file_path, "a") as f:
+    with open(file_path, "a") as f:
         f.write(f"\nTesting: {image_path}\n")
         f.write(f"Feature vector norm: {result['norm']}\n")
         f.write(f"Feature variance: {result['variance']}\n")
@@ -118,11 +123,12 @@ def check_authenticity(image_path):
             "sharpness": float(sharpness)
         }
         
-        # Save to text file (use /tmp for Vercel)
-        save_result_to_file(image_path, result_dict, "authenticity_results.txt")
+        # Save to text file
+        result_file = r"C:\Users\Muhammad Haroon\Desktop\py_img\authenticity_results.txt"
+        save_result_to_file(image_path, result_dict, result_file)
         
         # Clean up temporary file
-        if os.path.exists(image_path) and image_path != image_path.rsplit(".", 1)[0] + ".jpg":
+        if image_path != image_path.rsplit(".", 1)[0] + ".jpg":
             os.remove(image_path)
         
         return result_dict
@@ -130,29 +136,31 @@ def check_authenticity(image_path):
         print(f"Error: {e}")
         return {"result": "Error in processing", "confidence": 0.0}
 
-# Vercel Serverless Function handler
-def handler(request):
-    if request.method == "POST":
-        if "image" not in request.files:
-            return jsonify({"error": "No image file provided"}), 400
-        
-        image_file = request.files["image"]
-        if image_file.filename == "":
-            return jsonify({"error": "No image selected"}), 400
-        
-        # Save the uploaded image temporarily in /tmp (Vercel's writable directory)
-        temp_dir = "/tmp/uploads"
-        os.makedirs(temp_dir, exist_ok=True)
-        image_path = os.path.join(temp_dir, image_file.filename)
-        image_file.save(image_path)
-        
-        # Check authenticity
-        result = check_authenticity(image_path)
-        
-        # Clean up the uploaded file
-        if os.path.exists(image_path):
-            os.remove(image_path)
-        
-        return jsonify(result)
-    else:
-        return jsonify({"error": "Method not allowed"}), 405
+# API endpoint to check image authenticity
+@app.route('/check_authenticity', methods=['POST'])
+def api_check_authenticity():
+    if 'image' not in request.files:
+        return jsonify({"error": "No image file provided"}), 400
+    
+    image_file = request.files['image']
+    if image_file.filename == '':
+        return jsonify({"error": "No image selected"}), 400
+    
+    # Save the uploaded image temporarily
+    upload_folder = r"C:\Users\Muhammad Haroon\Desktop\py_img\uploads"
+    os.makedirs(upload_folder, exist_ok=True)
+    image_path = os.path.join(upload_folder, image_file.filename)
+    image_file.save(image_path)
+    
+    # Check authenticity
+    result = check_authenticity(image_path)
+    
+    # Clean up the uploaded file
+    if os.path.exists(image_path):
+        os.remove(image_path)
+    
+    return jsonify(result)
+
+# Run the API
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5000, debug=True)
