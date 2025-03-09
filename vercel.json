@@ -8,6 +8,16 @@
   ],
   "routes": [
     {
+      "src": "/",
+      "dest": "api/index.py",
+      "methods": ["GET"]
+    },
+    {
+      "src": "/check_authenticity",
+      "dest": "api/index.py",
+      "methods": ["POST"]
+    },
+    {
       "src": "/(.*)",
       "dest": "api/index.py"
     }
